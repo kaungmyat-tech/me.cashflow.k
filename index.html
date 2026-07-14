@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Budget Planner</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/index.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.6/index.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d2e;
+            --bg-card: #222640;
+            --bg-card-hover: #2a2f4a;
+            --accent: #0ea5e9; 
+            --accent-light: #7dd3fc;
+            --success: #00cec9;
+            --warning: #fdcb6e;
+            --danger: #ff7675;
+            --info: #74b9ff;
+            --text-primary: #e8e8f0;
+            --text-secondary: #9ca0b8;
+            --border: #2d3154;
+            --gradient-1: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            --gradient-2: linear-gradient(135deg, #0ea5e9, #7dd3fc);
+            --gradient-3: linear-gradient(135deg, #fd79a8, #e84393);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 8s ease-in-out infinite;
+        }
+        .login-bg-orb:nth-child(1) { width: 400px; height: 400px; background: #6c5ce7; top: -100px; left: -100px; }
+        .login-bg-orb:nth-child(2) { width: 300px; height: 300px; background: #00cec9; bottom: -50px; right: -50px; animation-delay: -3s; }
+        .login-bg-orb:nth-child(3) { width: 200px; height: 200px; background: #fd79a8; top: 50%; left: 50%; animation-delay: -5s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+        }
+        .login-card {
+            background: rgba(34, 38, 64, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 48px;
+            width: 420px;
+            max-width: 90vw;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        .login-card h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .login-card p { color: var(--text-secondary); margin-bottom: 32px; font-size: 14px; }
+        .login-card .lock-icon {
+            width: 64px; height: 64px;
+            background: #0a1f44;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px;
+            font-size: 28px;
+        }
+        .input-group { margin-bottom: 20px; }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            margin-top: 8px;
+        }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4); }
+        .login-error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 12px;
+            display: none;
+            text-align: center;
+        }
+
+        /* Main App */
+        .app-container { display: none; min-height: 100vh; }
+        .app-container.active { display: flex; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 8px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .sidebar-brand .brand-icon {
+            width: 40px; height: 40px;
+            background: #0a1f44;          /* navy blue */
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .sidebar-brand span { font-weight: 700; font-size: 16px; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
+        .nav-item.active { background: var(--accent); color: white; }
+        .nav-item .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--danger);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+        }
+        .logout-btn:hover { background: rgba(255, 118, 117, 0.1); }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 32px;
+            min-height: 100vh;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .page-header h2 { font-size: 24px; font-weight: 700; }
+        .page-header .date-display { color: var(--text-secondary); font-size: 14px; }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .stat-card .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        .stat-card .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+        .stat-card .stat-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .stat-card .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Section */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Table */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .table-header h3 { font-size: 15px; font-weight: 600; }
+        .table-scroll { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+        tr:hover td { background: var(--bg-card-hover); }
+        .positive-val { color: var(--success); }
+        .negative-val { color: var(--danger); }
+        .neutral-val { color: var(--warning); }
+        .info-val { color: var(--info); }
+
+        /* Chart Container */
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .chart-container h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        .chart-wrapper { position: relative; height: 320px; }
+
+        /* Budget vs Actual */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .comparison-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .comparison-card h4 { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+        .bar-compare { margin-bottom: 14px; }
+        .bar-compare .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .bar-compare .bar-track {
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .bar-compare .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        .bar-fill.budget { background: var(--accent); }
+        .bar-fill.actual { background: var(--success); }
+        .bar-fill.over { background: var(--danger); }
+
+        /* Calculator / Forms */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .calc-input-card, .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .calc-input-card h3, .result-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .calc-btn {
+            padding: 10px 20px;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-top: 4px;
+        }
+        .calc-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.3); }
+        .calc-btn.danger { background: linear-gradient(135deg, #ff7675, #d63031); }
+        .calc-btn.success { background: var(--gradient-2); }
+        .calc-btn.small { padding: 6px 12px; font-size: 11px; }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .result-item .label { color: var(--text-secondary); }
+        .result-item .value { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        /* Year Tabs */
+        .year-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .year-tab {
+            padding: 8px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .year-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .year-tab:hover:not(.active) { border-color: var(--accent); color: var(--text-primary); }
+
+        /* Actual Entry Form */
+        .actual-entry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .actual-entry-grid .form-group { margin-bottom: 0; }
+
+        /* Loan / Extra Cost Items */
+        .item-list { margin-top: 16px; }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .item-row .item-info { flex: 1; min-width: 200px; }
+        .item-row .item-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+        .item-row .item-detail { font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+        .item-row .item-actions { display: flex; gap: 6px; }
+
+        /* Mobile */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            width: 40px; height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+        @media (max-width: 768px) {
+            .mobile-toggle { display: flex; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 20px; padding-top: 64px; }
+            .calc-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .section.active { animation: fadeIn 0.3s ease; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .tag-income { background: rgba(0,206,201,0.15); color: var(--success); }
+        .tag-expense { background: rgba(255,118,117,0.15); color: var(--danger); }
+        .tag-loan { background: rgba(116,185,255,0.15); color: var(--info); }
+        .tag-paid { background: rgba(0,206,201,0.15); color: var(--success); }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(108,92,231,0.08), rgba(0,206,201,0.08));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        .highlight-box h4 { font-size: 13px; color: var(--accent-light); margin-bottom: 6px; }
+        .highlight-box p { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+        .highlight-box strong { color: var(--text-primary); }
+
+        .loan-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .loan-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .loan-card h4 {
+            font-size: 13px;
+            color: var(--info);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .loan-progress {
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .loan-progress-fill {
+            height: 100%;
+            background: var(--gradient-2);
+            border-radius: 3px;
+            transition: width 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div class="login-container" id="loginPage">
+    <div class="login-bg-orb"></div>
+    <div class="login-bg-orb"></div>
+    <div class="login-bg-orb"></div>
+    <div class="login-card">
+        <div class="lock-icon">🔐</div>
+        <h1>Budget Planner</h1>
+        <p>Enter your keyword to access your personal financial dashboard</p>
+        <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="loginUser" placeholder="Enter username" value="admin">
+        </div>
+        <div class="input-group">
+            <label>Keyword / Password</label>
+            <input type="password" id="loginPass" placeholder="Enter your keyword">
+        </div>
+        <button class="login-btn" onclick="handleLogin()">Sign In</button>
+        <div class="login-error" id="loginError">Invalid keyword. Please try again.</div>
+    </div>
+</div>
+
+<!-- Main App -->
+<div class="app-container" id="appContainer">
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">〽️</div>
+            <span>My Cash Flow</span>
+        </div>
+        <div class="nav-item active" onclick="showSection('dashboard', this)">
+            <span class="nav-icon">📊</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="showSection('projection', this)">
+            <span class="nav-icon">📈</span> 3-Year Projection
+        </div>
+        <div class="nav-item" onclick="showSection('loans', this)">
+            <span class="nav-icon">🏦</span> Loan Manager
+        </div>
+        <div class="nav-item" onclick="showSection('extraCosts', this)">
+            <span class="nav-icon">💸</span> Extra Costs
+        </div>
+        <div class="nav-item" onclick="showSection('budgetActual', this)">
+            <span class="nav-icon">⚖️</span> Budget vs Actual
+        </div>
+        <div class="nav-item" onclick="showSection('settings', this)">
+            <span class="nav-icon">⚙️</span> Settings
+        </div>
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="handleLogout()">
+                <span>🚪</span> Sign Out
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <!-- Dashboard -->
+        <div class="section active" id="section-dashboard">
+            <div class="page-header">
+                <div>
+                    <h2>Dashboard</h2>
+                    <span class="date-display" id="currentDate"></span>
+                </div>
+            </div>
+
+            <div class="stats-grid" id="dashboardStats"></div>
+
+            <div class="highlight-box">
+                <h4>📋 Financial Overview (Starting Aug 2026)</h4>
+                <p id="dashboardSummary"></p>
+            </div>
+
+            <div class="chart-container">
+                <h3>Monthly Cash Flow Overview (Year 1)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3-Year Projection -->
+        <div class="section" id="section-projection">
+            <div class="page-header">
+                <h2>3-Year Financial Projection</h2>
+            </div>
+
+            <div class="highlight-box">
+                <h4>📊 Projection Assumptions</h4>
+                <p id="projectionAssumptions"></p>
+            </div>
+
+            <div class="year-tabs">
+                <button class="year-tab active" onclick="showYearTable(1, this)">Year 1</button>
+                <button class="year-tab" onclick="showYearTable(2, this)">Year 2</button>
+                <button class="year-tab" onclick="showYearTable(3, this)">Year 3</button>
+                <button class="year-tab" onclick="showYearTable(0, this)">All Years</button>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Monthly Projection Detail</h3>
+                </div>
+                <div class="table-scroll" style="max-height: 500px; overflow-y: auto;">
+                    <table id="projectionTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Income</th>
+                                <th>Variation</th>
+                                <th>Min Income</th>
+                                <th>Daily Exp</th>
+                                <th>Monthly Exp</th>
+                                <th>Extra Costs</th>
+                                <th>Loan Payment</th>
+                                <th>App Invest</th>
+                                <th>Net Cash Flow</th>
+                                <th>Balance</th>
+                                <th>Total Loan Left</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectionBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>3-Year Balance & Loan Projection</h3>
+                <div class="chart-wrapper">
+                    <canvas id="projectionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Income vs Expenses (with Loan Payments)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="incomeExpenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loan Manager -->
+        <div class="section" id="section-loans">
+            <div class="page-header">
+                <h2>Loan Manager</h2>
+            </div>
+
+            <div class="highlight-box">
+                <h4>🏦 Manage Your Loans</h4>
+                <p>Track your current loan and plan future loans with interest. The system will calculate monthly payments and impact on your cash flow.</p>
+            </div>
+
+            <div class="loan-summary-grid" id="loanSummaryGrid"></div>
+
+            <div class="calc-grid">
+                <div class="calc-input-card">
+                    <h3>➕ Add Future Loan</h3>
+                    <div class="form-group">
+                        <label>Loan Name / Purpose</label>
+                        <input type="text" id="loanName" placeholder="e.g., Business Expansion">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Loan Amount (MMK)</label>
+                            <input type="number" id="loanAmount" placeholder="e.g., 2,000,000">
+                        </div>
+                        <div class="form-group">
+                            <label>Interest Rate (% per year)</label>
+                            <input type="number" id="loanInterest" placeholder="e.g., 12" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Repayment Term (months)</label>
+                            <input type="number" id="loanTerm" placeholder="e.g., 24">
+                        </div>
+                        <div class="form-group">
+                            <label>Start Month (from Aug 2026)</label>
+                            <input type="number" id="loanStartMonth" placeholder="e.g., 6" min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Repayment Type</label>
+                        <select id="loanType">
+                            <option value="flat">Flat (Equal Principal + Interest)</option>
+                            <option value="reducing">Reducing Balance</option>
+                            <option value="interest_only">Interest Only + Principal at End</option>
+                        </select>
+                    </div>
+                    <button class="calc-btn" onclick="addLoan()">➕ Add Loan</button>
+                </div>
+
+                <div class="result-card">
+                    <h3>💡 Loan Calculator Preview</h3>
+                    <div class="form-group">
+                        <label>Loan Amount (MMK)</label>
+                        <input type="number" id="calcLoanAmount" placeholder="e.g., 5,000,000" oninput="previewLoan()">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Interest Rate (%/year)</label>
+                            <input type="number" id="calcLoanInterest" placeholder="12" step="0.1" value="0" oninput="previewLoan()">
+                        </div>
+                        <div class="form-group">
+                            <label>Term (months)</label>
+                            <input type="number" id="calcLoanTerm" placeholder="24" oninput="previewLoan()">
+                        </div>
+                    </div>
+                    <div id="loanPreviewResults">
+                        <div class="result-item">
+                            <span class="label">Monthly Payment</span>
+                            <span class="value" id="prevMonthly">— MMK</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Total Interest</span>
+                            <span class="value" id="prevInterest">— MMK</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="label">Total Repayment</span>
+                            <span class="value" id="prevTotal">— MMK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 24px;">
+                <div class="table-header">
+                    <h3>All Loans</h3>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Principal</th>
+                                <th>Interest</th>
+                                <th>Term</th>
+                                <th>Start</th>
+                                <th>Monthly Payment</th>
+                                <th>Total Interest</th>
+                                <th>Remaining</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loansTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extra Costs -->
+        <div class="section" id="section-extraCosts">
+            <div class="page-header">
+                <h2>Extra Costs</h2>
+            </div>
+
+            <div class="highlight-box">
+                <h4>💸 Plan Additional Expenses</h4>
+                <p>Add one-time or recurring extra costs that will be included in your projection. These are added on top of your regular daily expenses.</p>
+            </div>
+
+            <div class="calc-input-card" style="margin-bottom: 24px;">
+                <h3>➕ Add Extra Cost</h3>
+                <div class="form-group">
+                    <label>Cost Name / Description</label>
+                    <input type="text" id="extraCostName" placeholder="e.g., New Laptop, Medical, Travel">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount (MMK)</label>
+                        <input type="number" id="extraCostAmount" placeholder="e.g., 500,000">
+                    </div>
+                    <div class="form-group">
+                        <label>Occur in Month # (from Aug 2026)</label>
+                        <input type="number" id="extraCostMonth" placeholder="e.g., 3" min="1" value="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="extraCostType">
+                        <option value="onetime">One-time</option>
+                        <option value="recurring">Recurring (every month from this point)</option>
+                        <option value="recurring_yearly">Recurring Yearly</option>
+                    </select>
+                </div>
+                <button class="calc-btn" onclick="addExtraCost()">➕ Add Extra Cost</button>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Extra Costs List</h3>
+                    <button class="calc-btn danger small" onclick="clearAllExtraCosts()">Clear All</button>
+                </div>
+                <div class="item-list" id="extraCostsList" style="padding: 16px;"></div>
+            </div>
+        </div>
+
+        <!-- Budget vs Actual -->
+        <div class="section" id="section-budgetActual">
+            <div class="page-header">
+                <h2>Budget vs Actual</h2>
+            </div>
+
+            <div class="highlight-box">
+                <h4>⚖️ Track Your Spending</h4>
+                <p>Enter your actual monthly data to compare against your budget plan. Data is saved locally in your browser.</p>
+            </div>
+
+            <div class="calc-input-card" style="margin-bottom: 24px;">
+                <h3>📝 Record Actual Monthly Data</h3>
+                <div class="actual-entry-grid">
+                    <div class="form-group">
+                        <label>Month</label>
+                        <input type="month" id="actualMonth" value="2026-08">
+                    </div>
+                    <div class="form-group">
+                        <label>Actual Income (MMK)</label>
+                        <input type="number" id="actualIncome" placeholder="1,500,000">
+                    </div>
+                    <div class="form-group">
+                        <label>Actual Expenses (MMK)</label>
+                        <input type="number" id="actualExpense" placeholder="360,000">
+                    </div>
+                    <div class="form-group">
+                        <label>Actual Loan Paid (MMK)</label>
+                        <input type="number" id="actualLoanPaid" placeholder="0">
+                    </div>
+                </div>
+                <button class="calc-btn" onclick="saveActual()">💾 Save Actual Data</button>
+            </div>
+
+            <div class="comparison-grid" id="comparisonGrid"></div>
+
+            <div class="chart-container">
+                <h3>Budget vs Actual - Monthly Comparison</h3>
+                <div class="chart-wrapper">
+                    <canvas id="budgetActualChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>Recorded Actuals</h3>
+                    <button class="calc-btn danger small" onclick="clearActuals()">Clear All</button>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Budget Income</th>
+                                <th>Actual Income</th>
+                                <th>Variance</th>
+                                <th>Budget Expense</th>
+                                <th>Actual Expense</th>
+                                <th>Variance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="actualsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="section" id="section-settings">
+            <div class="page-header">
+                <h2>Settings</h2>
+            </div>
+
+            <div class="calc-input-card" style="margin-bottom: 24px;">
+                <h3>⚙️ Budget Parameters</h3>
+                <div class="actual-entry-grid">
+                    <div class="form-group">
+                        <label>Current Loan Amount (MMK)</label>
+                        <input type="number" id="setLoan" value="3895150">
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Income (MMK)</label>
+                        <input type="number" id="setIncome" value="1500000">
+                    </div>
+                    <div class="form-group">
+                        <label>Income Variation Max (MMK)</label>
+                        <input type="number" id="setVariation" value="50000">
+                    </div>
+                    <div class="form-group">
+                        <label>Daily Cost Average (MMK)</label>
+                        <input type="number" id="setDaily" value="12000">
+                    </div>
+                    <div class="form-group">
+                        <label>App Dev Investment (MMK)</label>
+                        <input type="number" id="setAppInvest" value="200000">
+                    </div>
+                    <div class="form-group">
+                        <label>Yearly Income Increment (MMK)</label>
+                        <input type="number" id="setIncrement" value="500000">
+                    </div>
+                    <div class="form-group">
+                        <label>Yearly Expense Increase (%)</label>
+                        <input type="number" id="setExpIncrease" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Current Loan Monthly Payment (MMK)</label>
+                        <input type="number" id="setLoanPayment" value="300000">
+                    </div>
+                </div>
+                <button class="calc-btn" onclick="updateSettings()">💾 Update & Recalculate</button>
+            </div>
+
+            <div class="calc-input-card">
+                <h3>🔑 Change Login Keyword</h3>
+                <div class="actual-entry-grid">
+                    <div class="form-group">
+                        <label>New Keyword</label>
+                        <input type="password" id="newKeyword" placeholder="Enter new keyword">
+                    </div>
+                </div>
+                <button class="calc-btn" onclick="changeKeyword()">🔐 Update Keyword</button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+// ===== CONFIGURATION =====
+let CONFIG = {
+    currentLoan: 3895150,
+    monthlyIncome: 1500000,
+    incomeVariation: 50000,
+    dailyCost: 12000,
+    appInvestment: 200000,
+    yearlyIncomeIncrement: 500000,
+    yearlyExpenseIncrease: 30,
+    currentLoanPayment: 300000,
+    startYear: 2026,
+    startMonth: 8, // August
+    keyword: localStorage.getItem('budgetKeyword') || 'budget2026'
+};
+
+let futureLoans = JSON.parse(localStorage.getItem('futureLoans') || '[]');
+let extraCosts = JSON.parse(localStorage.getItem('extraCosts') || '[]');
+let actualData = JSON.parse(localStorage.getItem('budgetActuals') || '[]');
+let charts = {};
+
+// ===== FORMAT HELPERS =====
+function fmt(num) {
+    if (num === null || num === undefined || isNaN(num)) return '0';
+    return Math.round(num).toLocaleString('en-US');
+}
+function fmtMMK(num) {
+    return fmt(num) + ' MMK';
+}
+
+// ===== MONTH NAMES =====
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getMonthLabel(globalMonthIdx) {
+    // globalMonthIdx: 0 = Aug 2026
+    const totalMonths = (CONFIG.startYear * 12 + (CONFIG.startMonth - 1)) + globalMonthIdx;
+    const y = Math.floor(totalMonths / 12);
+    const m = totalMonths % 12;
+    return MONTH_NAMES[m] + ' ' + y;
+}
+
+function getMonthDate(globalMonthIdx) {
+    const totalMonths = (CONFIG.startYear * 12 + (CONFIG.startMonth - 1)) + globalMonthIdx;
+    const y = Math.floor(totalMonths / 12);
+    const m = totalMonths % 12;
+    return { year: y, month: m };
+}
+
+// ===== LOGIN =====
+function handleLogin() {
+    const pass = document.getElementById('loginPass').value;
+    if (pass === CONFIG.keyword) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('appContainer').classList.add('active');
+        initApp();
+    } else {
+        const err = document.getElementById('loginError');
+        err.style.display = 'block';
+        document.getElementById('loginPass').value = '';
+        setTimeout(() => err.style.display = 'none', 3000);
+    }
+}
+
+function handleLogout() {
+    document.getElementById('appContainer').classList.remove('active');
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('loginPass').value = '';
+}
+
+document.getElementById('loginPass').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') handleLogin();
+});
+
+// ===== NAVIGATION =====
+function showSection(sectionId, navItem) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + sectionId).classList.add('active');
+    if (navItem) navItem.classList.add('active');
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('open');
+    }
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ===== LOAN CALCULATIONS =====
+function calcLoanMonthlyPayment(principal, annualRate, termMonths, type) {
+    const monthlyRate = annualRate / 100 / 12;
+    if (annualRate === 0 || type === 'flat') {
+        // Flat: equal principal + equal interest
+        const monthlyPrincipal = principal / termMonths;
+        const monthlyInterest = (principal * annualRate / 100) / 12;
+        return { payment: monthlyPrincipal + monthlyInterest, totalInterest: monthlyInterest * termMonths };
+    }
+    if (type === 'reducing') {
+        if (monthlyRate === 0) {
+            return { payment: principal / termMonths, totalInterest: 0 };
+        }
+        const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, termMonths)) / (Math.pow(1 + monthlyRate, termMonths) - 1);
+        const totalInterest = (payment * termMonths) - principal;
+        return { payment, totalInterest };
+    }
+    if (type === 'interest_only') {
+        const monthlyInterest = principal * monthlyRate;
+        return { payment: monthlyInterest, totalInterest: monthlyInterest * termMonths, finalPrincipal: principal };
+    }
+    return { payment: principal / termMonths, totalInterest: 0 };
+}
+
+// ===== PROJECTION CALCULATION =====
+function calculateProjection() {
+    const data = [];
+    let balance = 0; // Starting balance (we have loan, not savings)
+    
+    // Track loan balances
+    let currentLoanBalance = CONFIG.currentLoan;
+    let futureLoansState = futureLoans.map(l => ({
+        ...l,
+        remaining: l.amount,
+        started: false
+    }));
+
+    for (let i = 0; i < 36; i++) {
+        const year = Math.floor(i / 12);
+        const monthInYear = i % 12;
+
+        // Income calculation
+        const yearIncome = CONFIG.monthlyIncome + (year * CONFIG.yearlyIncomeIncrement);
+        const variation = CONFIG.incomeVariation;
+        const minIncome = yearIncome - variation;
+
+        // Expense calculation
+        const yearDailyCost = CONFIG.dailyCost * Math.pow(1 + CONFIG.yearlyExpenseIncrease / 100, year);
+        const monthlyExpense = Math.round(yearDailyCost * 30);
+
+        // Extra costs for this month
+        let extraCostTotal = 0;
+        extraCosts.forEach(ec => {
+            if (ec.type === 'onetime') {
+                if (ec.month === i + 1) extraCostTotal += ec.amount;
+            } else if (ec.type === 'recurring') {
+                if (i + 1 >= ec.month) extraCostTotal += ec.amount;
+            } else if (ec.type === 'recurring_yearly') {
+                if (i + 1 >= ec.month && (i + 1 - ec.month) % 12 === 0) extraCostTotal += ec.amount;
+            }
+        });
+
+        // App investment (only first month)
+        const appInvest = (i === 0) ? CONFIG.appInvestment : 0;
+
+        // Current loan payment
+        let currentLoanPaid = 0;
+        if (currentLoanBalance > 0) {
+            currentLoanPaid = Math.min(CONFIG.currentLoanPayment, currentLoanBalance);
+            currentLoanBalance -= currentLoanPaid;
+        }
+
+        // Future loans payments
+        let futureLoansPaid = 0;
+        futureLoansState.forEach(fl => {
+            if (i + 1 >= fl.startMonth && fl.remaining > 0) {
+                const calc = calcLoanMonthlyPayment(fl.amount, fl.interest, fl.term, fl.type);
+                if (fl.type === 'interest_only') {
+                    const monthlyInterest = fl.remaining * (fl.interest / 100 / 12);
+                    let payment = monthlyInterest;
+                    if (i + 1 === fl.startMonth + fl.term - 1) {
+                        payment += fl.remaining;
+                        fl.remaining = 0;
+                    }
+                    futureLoansPaid += payment;
+                } else {
+                    const payment = Math.min(calc.payment, fl.remaining + (fl.remaining * fl.interest / 100 / 12));
+                    const interestPortion = fl.remaining * (fl.interest / 100 / 12);
+                    const principalPortion = payment - interestPortion;
+                    fl.remaining = Math.max(0, fl.remaining - principalPortion);
+                    futureLoansPaid += payment;
+                }
+            }
+        });
+
+        const totalLoanPayment = currentLoanPaid + futureLoansPaid;
+        const totalLoanRemaining = currentLoanBalance + futureLoansState.reduce((s, l) => s + l.remaining, 0);
+
+        // Net cash flow (using min income as conservative estimate)
+        const netCashFlow = minIncome - monthlyExpense - extraCostTotal - totalLoanPayment - appInvest;
+        balance += netCashFlow;
+
+        data.push({
+            month: i + 1,
+            label: getMonthLabel(i),
+            year: year + 1,
+            income: yearIncome,
+            variation: variation,
+            minIncome: minIncome,
+            dailyExpense: Math.round(yearDailyCost),
+            monthlyExpense: monthlyExpense,
+            extraCosts: extraCostTotal,
+            loanPayment: totalLoanPayment,
+            currentLoanPaid: currentLoanPaid,
+            futureLoansPaid: futureLoansPaid,
+            appInvest: appInvest,
+            netCashFlow: netCashFlow,
+            balance: balance,
+            currentLoanRemaining: currentLoanBalance,
+            totalLoanRemaining: totalLoanRemaining
+        });
+    }
+    return data;
+}
+
+// ===== INIT APP =====
+function initApp() {
+    const now = new Date();
+    document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    renderDashboard();
+    const projection = calculateProjection();
+    renderProjectionTable(projection, 1);
+    renderProjectionCharts(projection);
+    renderLoanManager();
+    renderExtraCosts();
+    renderBudgetActual();
+    previewLoan();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+    const projection = calculateProjection();
+    const firstMonth = projection[0];
+    const totalLoanRemaining = CONFIG.currentLoan + futureLoans.reduce((s, l) => s + l.amount, 0);
+
+    // Find when all loans are paid off
+    const loanPaidOffMonth = projection.find(p => p.totalLoanRemaining <= 0);
+    const loanPaidOffLabel = loanPaidOffMonth ? loanPaidOffMonth.label : 'Not within 3 years';
+
+    const stats = [
+        { icon: '🏦', bg: 'rgba(116,185,255,0.15)', label: 'Total Loan', value: fmt(totalLoanRemaining), sub: 'Current + Future', color: 'info-val' },
+        { icon: '📥', bg: 'rgba(0,206,201,0.15)', label: 'Monthly Income', value: fmt(CONFIG.monthlyIncome), sub: `±${fmt(CONFIG.incomeVariation)} variation`, color: 'positive-val' },
+        { icon: '📤', bg: 'rgba(255,118,117,0.15)', label: 'Monthly Expenses', value: fmt(CONFIG.dailyCost * 30), sub: `${fmt(CONFIG.dailyCost)}/day avg`, color: 'negative-val' },
+        { icon: '💳', bg: 'rgba(253,203,110,0.15)', label: 'Monthly Loan Payment', value: fmt(CONFIG.currentLoanPayment + futureLoans.reduce((s, l) => {
+            const c = calcLoanMonthlyPayment(l.amount, l.interest, l.term, l.type);
+            return s + c.payment;
+        }, 0)), sub: 'All loans combined', color: 'neutral-val' },
+        { icon: '🎯', bg: 'rgba(108,92,231,0.15)', label: 'Net Cash Flow (Y1 M1)', value: fmt(firstMonth.netCashFlow), sub: 'Conservative (min income)', color: firstMonth.netCashFlow >= 0 ? 'positive-val' : 'negative-val' },
+        { icon: '✅', bg: 'rgba(0,206,201,0.15)', label: 'Loan Payoff Date', value: loanPaidOffLabel, sub: 'At current payment rate', color: 'positive-val' }
+    ];
+
+    document.getElementById('dashboardStats').innerHTML = stats.map(s => `
+        <div class="stat-card">
+            <div class="stat-icon" style="background: ${s.bg};">${s.icon}</div>
+            <div class="stat-label">${s.label}</div>
+            <div class="stat-value ${s.color}">${s.value}</div>
+            <div class="stat-sub">${s.sub}</div>
+        </div>
+    `).join('');
+
+    const totalExtraCosts = extraCosts.reduce((s, ec) => {
+        if (ec.type === 'onetime') return s + ec.amount;
+        if (ec.type === 'recurring') return s + ec.amount * 36;
+        if (ec.type === 'recurring_yearly') return s + ec.amount * 3;
+        return s;
+    }, 0);
+
+    document.getElementById('dashboardSummary').innerHTML = `
+        <strong>Current Loan:</strong> ${fmtMMK(CONFIG.currentLoan)} | 
+        <strong>Monthly Income:</strong> ${fmtMMK(CONFIG.monthlyIncome)} (variation max ±${fmt(CONFIG.incomeVariation)}) | 
+        <strong>Daily Expense:</strong> ${fmtMMK(CONFIG.dailyCost)} (~${fmtMMK(CONFIG.dailyCost * 30)}/month) | 
+        <strong>App Investment:</strong> ${fmtMMK(CONFIG.appInvestment)} (Month 1) | 
+        <strong>Future Loans:</strong> ${futureLoans.length} planned | 
+        <strong>Extra Costs:</strong> ${extraCosts.length} items | 
+        <strong>Start:</strong> August 2026
+    `;
+
+    renderDashboardChart(projection);
+}
+
+function renderDashboardChart(projection) {
+    const ctx = document.getElementById('dashboardChart').getContext('2d');
+    if (charts.dashboard) charts.dashboard.destroy();
+
+    const year1 = projection.slice(0, 12);
+    charts.dashboard = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: year1.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Min Income',
+                    data: year1.map(d => d.minIncome),
+                    backgroundColor: 'rgba(0, 206, 201, 0.7)',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Monthly Expense',
+                    data: year1.map(d => d.monthlyExpense),
+                    backgroundColor: 'rgba(255, 118, 117, 0.7)',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Loan Payment',
+                    data: year1.map(d => d.loanPayment),
+                    backgroundColor: 'rgba(116, 185, 255, 0.7)',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Balance',
+                    data: year1.map(d => d.balance),
+                    type: 'line',
+                    borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#0ea5e9',
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#9ca0b8', font: { family: 'Inter', size: 11 } } }
+            },
+            scales: {
+                x: { ticks: { color: '#9ca0b8', font: { size: 9 } }, grid: { color: 'rgba(45,49,84,0.5)' } },
+                y: {
+                    ticks: { color: '#9ca0b8', callback: v => fmt(v) },
+                    grid: { color: 'rgba(45,49,84,0.5)' }
+                },
+                y1: {
+                    position: 'right',
+                    ticks: { color: '#6c5ce7', callback: v => fmt(v) },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// ===== PROJECTION TABLE =====
+function renderProjectionTable(projection, filterYear) {
+    const tbody = document.getElementById('projectionBody');
+    const filtered = filterYear === 0 ? projection : projection.filter(d => d.year === filterYear);
+
+    tbody.innerHTML = filtered.map(d => `
+        <tr>
+            <td><strong>${d.label}</strong></td>
+            <td class="positive-val">${fmt(d.income)}</td>
+            <td class="neutral-val">±${fmt(d.variation)}</td>
+            <td>${fmt(d.minIncome)}</td>
+            <td>${fmt(d.dailyExpense)}</td>
+            <td class="negative-val">-${fmt(d.monthlyExpense)}</td>
+            <td class="${d.extraCosts > 0 ? 'negative-val' : ''}">${d.extraCosts > 0 ? '-' + fmt(d.extraCosts) : '-'}</td>
+            <td class="info-val">-${fmt(d.loanPayment)}</td>
+            <td>${d.appInvest > 0 ? '<span class="neutral-val">-' + fmt(d.appInvest) + '</span>' : '-'}</td>
+            <td class="${d.netCashFlow >= 0 ? 'positive-val' : 'negative-val'}"><strong>${d.netCashFlow >= 0 ? '+' : ''}${fmt(d.netCashFlow)}</strong></td>
+            <td class="${d.balance >= 0 ? 'positive-val' : 'negative-val'}"><strong>${fmt(d.balance)}</strong></td>
+            <td class="info-val">${fmt(d.totalLoanRemaining)}</td>
+        </tr>
+    `).join('');
+
+    document.getElementById('projectionAssumptions').innerHTML = `
+        Start: <strong>August 2026</strong> | 
+        Income increment: <strong>+${fmtMMK(CONFIG.yearlyIncomeIncrement)}/year</strong> | 
+        Expense increase: <strong>+${CONFIG.yearlyExpenseIncrease}%/year</strong> | 
+        Income variation max: <strong>±${fmtMMK(CONFIG.incomeVariation)}</strong> | 
+        App Investment: <strong>${fmtMMK(CONFIG.appInvestment)}</strong> (Month 1) | 
+        Current Loan Payment: <strong>${fmtMMK(CONFIG.currentLoanPayment)}/month</strong> | 
+        Future Loans: <strong>${futureLoans.length}</strong> | 
+        Extra Costs: <strong>${extraCosts.length}</strong>
+    `;
+}
+
+function showYearTable(year, btn) {
+    document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const projection = calculateProjection();
+    renderProjectionTable(projection, year);
+}
+
+// ===== PROJECTION CHARTS =====
+function renderProjectionCharts(projection) {
+    const ctx1 = document.getElementById('projectionChart').getContext('2d');
+    if (charts.projection) charts.projection.destroy();
+
+    charts.projection = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: projection.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Cumulative Balance',
+                    data: projection.map(d => d.balance),
+                    borderColor: '#6c5ce7',
+                    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#6c5ce7',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Total Loan Remaining',
+                    data: projection.map(d => d.totalLoanRemaining),
+                    borderColor: '#74b9ff',
+                    backgroundColor: 'rgba(116, 185, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#74b9ff',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#9ca0b8', font: { family: 'Inter' } } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': ' + fmtMMK(ctx.raw)
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: '#9ca0b8', maxTicksLimit: 12, font: { size: 9 } }, grid: { color: 'rgba(45,49,84,0.5)' } },
+                y: { ticks: { color: '#9ca0b8', callback: v => fmt(v) }, grid: { color: 'rgba(45,49,84,0.5)' } }
+            }
+        }
+    });
+
+    const ctx2 = document.getElementById('incomeExpenseChart').getContext('2d');
+    if (charts.incomeExpense) charts.incomeExpense.destroy();
+
+    charts.incomeExpense = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: projection.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Min Income',
+                    data: projection.map(d => d.minIncome),
+                    backgroundColor: 'rgba(0, 206, 201, 0.6)',
+                    borderRadius: 3
+                },
+                {
+                    label: 'Expenses + Loan',
+                    data: projection.map(d => d.monthlyExpense + d.loanPayment + d.extraCosts + d.appInvest),
+                    backgroundColor: 'rgba(255, 118, 117, 0.6)',
+                    borderRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#9ca0b8', font: { family: 'Inter' } } }
+            },
+            scales: {
+                x: { ticks: { color: '#9ca0b8', maxTicksLimit: 12, font: { size: 9 } }, grid: { color: 'rgba(45,49,84,0.5)' } },
+                y: { ticks: { color: '#9ca0b8', callback: v => fmt(v) }, grid: { color: 'rgba(45,49,84,0.5)' } }
+            }
+        }
+    });
+}
+
+// ===== LOAN MANAGER =====
+function renderLoanManager() {
+    const grid = document.getElementById('loanSummaryGrid');
+    const projection = calculateProjection();
+    
+    // Current loan card
+    const currentLoanPaid = CONFIG.currentLoan - projection[projection.length - 1].currentLoanRemaining;
+    const currentLoanPct = Math.min((currentLoanPaid / CONFIG.currentLoan) * 100, 100);
+    
+    let cardsHtml = `
+        <div class="loan-card">
+            <h4>
+                <span>🏦 Current Loan</span>
+                <span class="tag tag-loan">ACTIVE</span>
+            </h4>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span class="text-secondary">Principal</span>
+                <strong>${fmtMMK(CONFIG.currentLoan)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span class="text-secondary">Interest Rate</span>
+                <strong>0% (No Interest)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span class="text-secondary">Monthly Payment</span>
+                <strong>${fmtMMK(CONFIG.currentLoanPayment)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                <span class="text-secondary">Months to Repay</span>
+                <strong>${Math.ceil(CONFIG.currentLoan / CONFIG.currentLoanPayment)} months</strong>
+            </div>
+            <div class="loan-progress">
+                <div class="loan-progress-fill" style="width: ${currentLoanPct}%;"></div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary);">
+                ${fmt(currentLoanPct)}% projected paid in 3 years
+            </div>
+        </div>
+    `;
+
+    // Future loans cards
+    futureLoans.forEach((loan, idx) => {
+        const calc = calcLoanMonthlyPayment(loan.amount, loan.interest, loan.term, loan.type);
+        const startLabel = getMonthLabel(loan.startMonth - 1);
+        cardsHtml += `
+            <div class="loan-card">
+                <h4>
+                    <span>📋 ${loan.name || 'Loan #' + (idx + 1)}</span>
+                    <span class="tag tag-loan">PLANNED</span>
+                </h4>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Principal</span>
+                    <strong>${fmtMMK(loan.amount)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Interest Rate</span>
+                    <strong>${loan.interest}%/year</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Monthly Payment</span>
+                    <strong>${fmtMMK(calc.payment)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Total Interest</span>
+                    <strong class="neutral-val">${fmtMMK(calc.totalInterest)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Starts</span>
+                    <strong>${startLabel} (Month ${loan.startMonth})</strong>
+                </div>
+            </div>
+        `;
+    });
+
+    if (futureLoans.length === 0) {
+        cardsHtml += `
+            <div class="loan-card" style="display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 13px;">
+                No future loans planned. Use the form to add one.
+            </div>
+        `;
+    }
+
+    grid.innerHTML = cardsHtml;
+
+    // Loans table
+    const tbody = document.getElementById('loansTableBody');
+    let rows = `
+        <tr>
+            <td><strong>Current Loan</strong></td>
+            <td>${fmtMMK(CONFIG.currentLoan)}</td>
+            <td>0%</td>
+            <td>${Math.ceil(CONFIG.currentLoan / CONFIG.currentLoanPayment)} mo</td>
+            <td>Aug 2026</td>
+            <td>${fmtMMK(CONFIG.currentLoanPayment)}</td>
+            <td>0 MMK</td>
+            <td class="info-val">${fmtMMK(projection[projection.length - 1].currentLoanRemaining)}</td>
+            <td><span class="tag tag-loan">ACTIVE</span></td>
+            <td>-</td>
+        </tr>
+    `;
+    futureLoans.forEach((loan, idx) => {
+        const calc = calcLoanMonthlyPayment(loan.amount, loan.interest, loan.term, loan.type);
+        const startLabel = getMonthLabel(loan.startMonth - 1);
+        rows += `
+            <tr>
+                <td><strong>${loan.name || 'Loan #' + (idx + 1)}</strong></td>
+                <td>${fmtMMK(loan.amount)}</td>
+                <td>${loan.interest}%</td>
+                <td>${loan.term} mo</td>
+                <td>${startLabel}</td>
+                <td>${fmtMMK(calc.payment)}</td>
+                <td class="neutral-val">${fmtMMK(calc.totalInterest)}</td>
+                <td class="info-val">${fmtMMK(loan.amount)}</td>
+                <td><span class="tag tag-expense">PLANNED</span></td>
+                <td><button class="calc-btn danger small" onclick="removeLoan(${idx})">Remove</button></td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = rows;
+}
+
+function addLoan() {
+    const name = document.getElementById('loanName').value.trim();
+    const amount = parseFloat(document.getElementById('loanAmount').value);
+    const interest = parseFloat(document.getElementById('loanInterest').value) || 0;
+    const term = parseInt(document.getElementById('loanTerm').value);
+    const startMonth = parseInt(document.getElementById('loanStartMonth').value) || 1;
+    const type = document.getElementById('loanType').value;
+
+    if (!name || !amount || !term) {
+        alert('Please fill in loan name, amount, and term');
+        return;
+    }
+
+    futureLoans.push({ name, amount, interest, term, startMonth, type });
+    localStorage.setItem('futureLoans', JSON.stringify(futureLoans));
+
+    document.getElementById('loanName').value = '';
+    document.getElementById('loanAmount').value = '';
+    document.getElementById('loanTerm').value = '';
+
+    initApp();
+    alert('✅ Loan added successfully!');
+}
+
+function removeLoan(idx) {
+    if (confirm('Remove this planned loan?')) {
+        futureLoans.splice(idx, 1);
+        localStorage.setItem('futureLoans', JSON.stringify(futureLoans));
+        initApp();
+    }
+}
+
+function previewLoan() {
+    const amount = parseFloat(document.getElementById('calcLoanAmount').value) || 0;
+    const interest = parseFloat(document.getElementById('calcLoanInterest').value) || 0;
+    const term = parseInt(document.getElementById('calcLoanTerm').value) || 0;
+
+    if (amount > 0 && term > 0) {
+        const calc = calcLoanMonthlyPayment(amount, interest, term, 'reducing');
+        document.getElementById('prevMonthly').textContent = fmtMMK(calc.payment);
+        document.getElementById('prevInterest').textContent = fmtMMK(calc.totalInterest);
+        document.getElementById('prevTotal').textContent = fmtMMK(amount + calc.totalInterest);
+    } else {
+        document.getElementById('prevMonthly').textContent = '— MMK';
+        document.getElementById('prevInterest').textContent = '— MMK';
+        document.getElementById('prevTotal').textContent = '— MMK';
+    }
+}
+
+// ===== EXTRA COSTS =====
+function renderExtraCosts() {
+    const list = document.getElementById('extraCostsList');
+    if (extraCosts.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px; font-size: 13px;">No extra costs added yet. Use the form above to add one.</p>';
+        return;
+    }
+
+    list.innerHTML = extraCosts.map((ec, idx) => {
+        const typeLabel = ec.type === 'onetime' ? 'One-time' : ec.type === 'recurring' ? 'Recurring Monthly' : 'Recurring Yearly';
+        const monthLabel = getMonthLabel(ec.month - 1);
+        const totalImpact = ec.type === 'onetime' ? ec.amount : ec.type === 'recurring' ? ec.amount * (36 - ec.month + 1) : ec.amount * Math.ceil((36 - ec.month + 1) / 12);
+        return `
+            <div class="item-row">
+                <div class="item-info">
+                    <div class="item-name">${ec.name}</div>
+                    <div class="item-detail">
+                        ${fmtMMK(ec.amount)} • ${typeLabel} • Starts: ${monthLabel} (Month ${ec.month}) • 3-yr impact: ${fmtMMK(totalImpact)}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="calc-btn danger small" onclick="removeExtraCost(${idx})">Remove</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function addExtraCost() {
+    const name = document.getElementById('extraCostName').value.trim();
+    const amount = parseFloat(document.getElementById('extraCostAmount').value);
+    const month = parseInt(document.getElementById('extraCostMonth').value) || 1;
+    const type = document.getElementById('extraCostType').value;
+
+    if (!name || !amount) {
+        alert('Please fill in cost name and amount');
+        return;
+    }
+
+    extraCosts.push({ name, amount, month, type });
+    localStorage.setItem('extraCosts', JSON.stringify(extraCosts));
+
+    document.getElementById('extraCostName').value = '';
+    document.getElementById('extraCostAmount').value = '';
+
+    initApp();
+    alert('✅ Extra cost added!');
+}
+
+function removeExtraCost(idx) {
+    if (confirm('Remove this extra cost?')) {
+        extraCosts.splice(idx, 1);
+        localStorage.setItem('extraCosts', JSON.stringify(extraCosts));
+        initApp();
+    }
+}
+
+function clearAllExtraCosts() {
+    if (confirm('Remove ALL extra costs?')) {
+        extraCosts = [];
+        localStorage.setItem('extraCosts', JSON.stringify(extraCosts));
+        initApp();
+    }
+}
+
+// ===== BUDGET VS ACTUAL =====
+function renderBudgetActual() {
+    const projection = calculateProjection();
+    const grid = document.getElementById('comparisonGrid');
+    const tbody = document.getElementById('actualsBody');
+
+    if (actualData.length > 0) {
+        grid.innerHTML = actualData.map(actual => {
+            const monthData = projection.find(p => p.label === actual.monthLabel);
+            const budgetIncome = monthData ? monthData.minIncome : CONFIG.monthlyIncome - CONFIG.incomeVariation;
+            const budgetExpense = monthData ? monthData.monthlyExpense : CONFIG.dailyCost * 30;
+            const incomeVariance = actual.income - budgetIncome;
+            const expenseVariance = actual.expense - budgetExpense;
+            const incomePct = Math.min((actual.income / budgetIncome) * 100, 150);
+            const expensePct = Math.min((actual.expense / budgetExpense) * 100, 150);
+
+            return `
+                <div class="comparison-card">
+                    <h4>${actual.monthLabel}</h4>
+                    <div class="bar-compare">
+                        <div class="bar-label">
+                            <span>Income: Budget ${fmt(budgetIncome)}</span>
+                            <span>Actual ${fmt(actual.income)}</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill budget" style="width: 100%; opacity: 0.3; position: absolute;"></div>
+                            <div class="bar-fill ${incomePct >= 100 ? 'actual' : 'over'}" style="width: ${Math.min(incomePct, 100)}%;"></div>
+                        </div>
+                    </div>
+                    <div class="bar-compare">
+                        <div class="bar-label">
+                            <span>Expense: Budget ${fmt(budgetExpense)}</span>
+                            <span>Actual ${fmt(actual.expense)}</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill budget" style="width: 100%; opacity: 0.3; position: absolute;"></div>
+                            <div class="bar-fill ${expensePct <= 100 ? 'actual' : 'over'}" style="width: ${Math.min(expensePct, 100)}%;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; flex-wrap: wrap; gap: 4px;">
+                        <span class="${incomeVariance >= 0 ? 'positive-val' : 'negative-val'}">
+                            Income: ${incomeVariance >= 0 ? '+' : ''}${fmt(incomeVariance)}
+                        </span>
+                        <span class="${expenseVariance <= 0 ? 'positive-val' : 'negative-val'}">
+                            Expense: ${expenseVariance <= 0 ? '' : '+'}${fmt(expenseVariance)}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        grid.innerHTML = `
+            <div class="comparison-card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                <p style="color: var(--text-secondary); font-size: 13px;">No actual data recorded yet. Use the form above to start tracking.</p>
+            </div>
+        `;
+    }
+
+    tbody.innerHTML = actualData.map(actual => {
+        const monthData = projection.find(p => p.label === actual.monthLabel);
+        const budgetIncome = monthData ? monthData.minIncome : CONFIG.monthlyIncome - CONFIG.incomeVariation;
+        const budgetExpense = monthData ? monthData.monthlyExpense : CONFIG.dailyCost * 30;
+        const incomeVar = actual.income - budgetIncome;
+        const expenseVar = actual.expense - budgetExpense;
+        const status = (incomeVar >= 0 && expenseVar <= 0) ? '✅ On Track' : (incomeVar >= 0 ? '⚠️ Watch Expenses' : '❌ Over Budget');
+
+        return `
+            <tr>
+                <td><strong>${actual.monthLabel}</strong></td>
+                <td>${fmt(budgetIncome)}</td>
+                <td>${fmt(actual.income)}</td>
+                <td class="${incomeVar >= 0 ? 'positive-val' : 'negative-val'}">${incomeVar >= 0 ? '+' : ''}${fmt(incomeVar)}</td>
+                <td>${fmt(budgetExpense)}</td>
+                <td>${fmt(actual.expense)}</td>
+                <td class="${expenseVar <= 0 ? 'positive-val' : 'negative-val'}">${expenseVar <= 0 ? '' : '+'}${fmt(expenseVar)}</td>
+                <td>${status}</td>
+            </tr>
+        `;
+    }).join('');
+
+    renderBudgetActualChart(projection);
+}
+
+function renderBudgetActualChart(projection) {
+    const ctx = document.getElementById('budgetActualChart').getContext('2d');
+    if (charts.budgetActual) charts.budgetActual.destroy();
+
+    const budgetIncome = [];
+    const budgetExpense = [];
+    const actualIncome = [];
+    const actualExpense = [];
+    const labels = [];
+
+    projection.slice(0, 12).forEach((d) => {
+        labels.push(d.label);
+        budgetIncome.push(d.minIncome);
+        budgetExpense.push(d.monthlyExpense);
+
+        const actual = actualData.find(a => a.monthLabel === d.label);
+        actualIncome.push(actual ? actual.income : null);
+        actualExpense.push(actual ? actual.expense : null);
+    });
+
+    charts.budgetActual = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Budget Income (Min)',
+                    data: budgetIncome,
+                    backgroundColor: 'rgba(0, 206, 201, 0.3)',
+                    borderColor: 'rgba(0, 206, 201, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 3
+                },
+                {
+                    label: 'Actual Income',
+                    data: actualIncome,
+                    backgroundColor: 'rgba(0, 206, 201, 0.8)',
+                    borderRadius: 3
+                },
+                {
+                    label: 'Budget Expense',
+                    data: budgetExpense,
+                    backgroundColor: 'rgba(255, 118, 117, 0.3)',
+                    borderColor: 'rgba(255, 118, 117, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 3
+                },
+                {
+                    label: 'Actual Expense',
+                    data: actualExpense,
+                    backgroundColor: 'rgba(255, 118, 117, 0.8)',
+                    borderRadius: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#9ca0b8', font: { family: 'Inter' } } }
+            },
+            scales: {
+                x: { ticks: { color: '#9ca0b8', font: { size: 9 } }, grid: { color: 'rgba(45,49,84,0.5)' } },
+                y: { ticks: { color: '#9ca0b8', callback: v => fmt(v) }, grid: { color: 'rgba(45,49,84,0.5)' } }
+            }
+        }
+    });
+}
+
+function saveActual() {
+    const monthVal = document.getElementById('actualMonth').value;
+    const income = parseFloat(document.getElementById('actualIncome').value);
+    const expense = parseFloat(document.getElementById('actualExpense').value);
+    const loanPaid = parseFloat(document.getElementById('actualLoanPaid').value) || 0;
+
+    if (!monthVal || isNaN(income) || isNaN(expense)) {
+        alert('Please fill in Month, Income, and Expenses');
+        return;
+    }
+
+    const [y, m] = monthVal.split('-');
+    const monthLabel = MONTH_NAMES[parseInt(m) - 1] + ' ' + y;
+
+    actualData = actualData.filter(a => a.monthLabel !== monthLabel);
+    actualData.push({
+        monthLabel,
+        monthVal,
+        income,
+        expense,
+        loanPaid,
+        savings: income - expense - loanPaid
+    });
+    actualData.sort((a, b) => a.monthVal.localeCompare(b.monthVal));
+    localStorage.setItem('budgetActuals', JSON.stringify(actualData));
+
+    document.getElementById('actualIncome').value = '';
+    document.getElementById('actualExpense').value = '';
+    document.getElementById('actualLoanPaid').value = '';
+
+    renderBudgetActual();
+    alert('✅ Actual data saved for ' + monthLabel);
+}
+
+function clearActuals() {
+    if (confirm('Clear all actual data?')) {
+        actualData = [];
+        localStorage.removeItem('budgetActuals');
+        renderBudgetActual();
+    }
+}
+
+// ===== SETTINGS =====
+function updateSettings() {
+    CONFIG.currentLoan = parseFloat(document.getElementById('setLoan').value) || CONFIG.currentLoan;
+    CONFIG.monthlyIncome = parseFloat(document.getElementById('setIncome').value) || CONFIG.monthlyIncome;
+    CONFIG.incomeVariation = parseFloat(document.getElementById('setVariation').value) || CONFIG.incomeVariation;
+    CONFIG.dailyCost = parseFloat(document.getElementById('setDaily').value) || CONFIG.dailyCost;
+    CONFIG.appInvestment = parseFloat(document.getElementById('setAppInvest').value) || CONFIG.appInvestment;
+    CONFIG.yearlyIncomeIncrement = parseFloat(document.getElementById('setIncrement').value) || CONFIG.yearlyIncomeIncrement;
+    CONFIG.yearlyExpenseIncrease = parseFloat(document.getElementById('setExpIncrease').value) || CONFIG.yearlyExpenseIncrease;
+    CONFIG.currentLoanPayment = parseFloat(document.getElementById('setLoanPayment').value) || CONFIG.currentLoanPayment;
+
+    localStorage.setItem('budgetConfig', JSON.stringify(CONFIG));
+    initApp();
+    alert('✅ Settings updated and projections recalculated!');
+}
+
+function changeKeyword() {
+    const newKey = document.getElementById('newKeyword').value;
+    if (newKey.length < 3) {
+        alert('Keyword must be at least 3 characters');
+        return;
+    }
+    CONFIG.keyword = newKey;
+    localStorage.setItem('budgetKeyword', newKey);
+    document.getElementById('newKeyword').value = '';
+    alert('✅ Login keyword updated!');
+}
+
+// ===== LOAD SAVED CONFIG =====
+(function() {
+    const savedConfig = localStorage.getItem('budgetConfig');
+    if (savedConfig) {
+        const parsed = JSON.parse(savedConfig);
+        Object.assign(CONFIG, parsed);
+        document.getElementById('setLoan').value = CONFIG.currentLoan;
+        document.getElementById('setIncome').value = CONFIG.monthlyIncome;
+        document.getElementById('setVariation').value = CONFIG.incomeVariation;
+        document.getElementById('setDaily').value = CONFIG.dailyCost;
+        document.getElementById('setAppInvest').value = CONFIG.appInvestment;
+        document.getElementById('setIncrement').value = CONFIG.yearlyIncomeIncrement;
+        document.getElementById('setExpIncrease').value = CONFIG.yearlyExpenseIncrease;
+        document.getElementById('setLoanPayment').value = CONFIG.currentLoanPayment;
+    }
+})();
+</script>
+</body>
+</html>
